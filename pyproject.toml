@@ -12,8 +12,9 @@ license = "GNU GPL v3"
 python = "^3.9"
 fastapi = "^0.115.12"
 pypdf2 = "^3.0.1"
-python-multipart = "^0.0.20"
 uvicorn = "^0.34.0"
+requests = "^2.32.3"
+pydantic = "^2.11.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
