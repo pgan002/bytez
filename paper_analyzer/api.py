@@ -3,7 +3,6 @@ from io import BytesIO
 import PyPDF2
 import requests
 from fastapi import Body, FastAPI, File, HTTPException, UploadFile
-from pydantic import BaseModel
 
 from paper_analyzer import analyzer
 
@@ -43,7 +42,6 @@ async def analyze_url(url: str = Body(embed=True)):
     if content_type != 'application/pdf':
         raise HTTPException(400, f'Expected PDF, got {content_type}')
     return _analyze_pdf(BytesIO(response.content))
-
 
 
 @app.get('/')
