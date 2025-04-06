@@ -1,11 +1,11 @@
 
 [tool.poetry]
-name = "bytez-challenge"
-version = "0.1.0"
+name = "bytez-tech-assessment"
+version = "0.2.0"
 description = "Development challenge for Bytez"
 authors = ["Philip Ganchev <phil.ganchev@mail.com>"]
 readme = "README.md"
-packages = [{include = "bytez_challenge"}]
+packages = [{include = "paper_analyzer"}]
 license = "GNU GPL v3"
 
 [tool.poetry.dependencies]
@@ -21,7 +21,7 @@ pytest = "^7.0"
 httpx = "^0.23.0"
 
 [tool.uvicorn]
-app = "bytez_challenge.api:app"
+app = "paper_analyzer.api:app"
 host = "0.0.0.0"
 reload = true
 

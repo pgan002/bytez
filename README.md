@@ -9,5 +9,10 @@ See [instructions](file:///challenge.md)
 
 # Running
 
-1. Run `poetry run uvicorn bytez_challenge.api:app`
+1. Run `poetry run uvicorn paper_analyzer.api:app --reload`
 1. POST a PDF file to `/page-count` endpoint
+    ```
+    curl -X POST "http://localhost:8000/extract-text"\
+    -H "Content-Type: application/json"\
+    -d '{"url": "https://arxiv.org/pdf/2101.08809"}'
+    ```
