@@ -21,7 +21,7 @@ pytest = "^7.0"
 httpx = "^0.23.0"
 
 [tool.uvicorn]
-app = "bytez_challenge.main:app"
+app = "bytez_challenge.api:app"
 host = "0.0.0.0"
 reload = true
 
