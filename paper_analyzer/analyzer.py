@@ -2,7 +2,9 @@ import base64
 import json
 import os
 import re
+import sys
 from io import BytesIO
+from pathlib import Path
 from typing import Literal, Union
 
 import pymupdf
@@ -149,3 +151,11 @@ def analyze_paper_pdf(pdf_bytes: BytesIO) -> list[str]:
         blocks = analyze_page(i, total_pages, page_pdf)
         results.extend(blocks)
     return results
+
+
+def analyze() -> list[str]:
+    if sys.argv[1:]:
+        pdf_bytes = Path(sys.argv[1]).read_bytes()
+    else:
+        pdf_bytes = sys.stdin.buffer.read()
+    return analyze_paper_pdf(pdf_bytes)
