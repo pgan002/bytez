@@ -1,43 +1,24 @@
-import base64
 import json
+import logging
 import os
 import sys
-from io import BytesIO
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal
 
-import pymupdf
 from google import genai
 from google.genai.types import GenerateContentConfig
-from pydantic import BaseModel, field_validator, Field, ValidationError
+from pydantic import BaseModel, validator, Field, ValidationError
 
 from .chunking import chunk_by_semantic_units
 
 
-ContentBlockType = Literal[
-    'paragraph',
-    'title',
-    'authors',
-    'heading',
-    'sub-heading',
-    'image',
-    'code',
-    'caption',
-    'reference',
-    'formula',
-    'table',
-    'footnote',
-    'footer',
-    'header',
-    'print notice',
-    'toc'
-]
-
-
 class ContentBlock(BaseModel):
-    type: Literal['paragraph', 'image', 'table', 'formula']
+    type: Literal[
+        'paragraph', 'image', 'table', 'formula', 'code', 'reference',
+        'header', 'footer', 'print_notice', 'toc', 'authors'
+    ]
     content: str = ''
-    caption: str = ''  # For images/tables
+    caption: str | None = None  # For image/table/code
 
 
 class DocumentSection(BaseModel):
@@ -52,6 +33,13 @@ class DocumentSection(BaseModel):
 class StructuredDocument(BaseModel):
     title: str
     sections: list[DocumentSection]
+
+    @validator('sections')
+    def check_continuations(cls, v):
+        for i, section in enumerate(v):
+            if i == 0 and section.continued:
+                raise ValidationError('First section cannot be continuation')
+        return v
 
 
 LLM_NAME = 'gemini-1.5-flash-8b'  # Cheap, allows tuning (TODO: tune)
@@ -134,26 +122,29 @@ def assemble_hierarchical_structure(chunk_results: list[dict]) -> dict:
                     document['sections'] = []
                 document['sections'].append(section)
             section_stack.append(section)
-
     # Close any remaining open sections
     while section_stack:
         if 'sections' not in document:
             document['sections'] = []
         document['sections'].append(section_stack.pop())
-
     return document
 
 
 def analyze_paper_pdf(pdf_bytes: bytes) -> dict:
     chunks = chunk_by_semantic_units(pdf_bytes)
-    chunk_results = []
-    for i, chunk in enumerate(chunks):
-        result = process_chunk(chunk)
-        chunk_results.append(result)
-        # Progress saving (for crash recovery)
-        if i % 5 == 0:
-            Path(f'chunk_{i}.json').write_text(json.dumps(chunk_results))
-    return assemble_hierarchical_structure(chunk_results)
+    document = {}
+    for retry_ix in range(MAX_RETRIES):
+        chunk_results = []
+        for chunk in chunks:
+            result = process_chunk(chunk)
+            chunk_results.append(result)
+        document = assemble_hierarchical_structure(chunk_results)
+        try:
+            StructuredDocument.validate(document)
+            return document
+        except ValidationError as e:
+            logging.error(f'Structure validation failed: {e}')
+    return document
 
 
 def analyze() -> dict:
