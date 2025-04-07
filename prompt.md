@@ -35,7 +35,7 @@
       "heading": "Formal Heading Text",
       "level": 1|2|3|4,
       "content": [
-        "type": "paragraph|image|table|formula|authors|code|header|footer|print_notice|toc",
+        "type": "paragraph|image|table|formula|authors|code|header|footer|print_notice|toc|reference",
         // Paragraphs, authors, header, footer, footnote, print_notice, toc: "content": <text>
         // Images: "content": <b64-encoded>, "caption": <text>
         // Tables, code: "content": <formatted row/column text>, "caption": <text>
