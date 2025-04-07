@@ -98,34 +98,81 @@ def call_gemini_api(page_number: int, total_pages: int, text: str, pdf: pymupdf.
         return f'Error processing page: {str(e)}'
 
 
-def extract_content_blocks(llm_response: str, page_text: str) -> list[dict[str, str]]:
-    """Validate content blocks against the schema and the page text"""
-    normalized_page_text = re.sub(r'\s+', ' ', page_text.strip().lower())
-    raw_data = json.loads(llm_response)
-    if not isinstance(raw_data, list):
-        raise ValueError('Response is not a list')
-    validated_blocks = []
-    errors = []
-    normalized_block_texts = []
-    for i, item in enumerate(raw_data):
-        try:
-            block_type, content = next(iter(item.items()))
-            block = ContentBlock(type=block_type, content=content)
-            validated_blocks.append(item)
-            if block_type != 'image':
-                normalized_block_text = re.sub(r'\s+', ' ', content.strip().lower())
-                if normalized_block_text not in normalized_page_text:
-                    item['error'] = 'Not found in page text'
-                normalized_block_texts.append(normalized_block_text)
-        except ValidationError as e:
-            validated_blocks.append({'error': str(e), 'original_text': item})
-            errors.append(f'Item {i}: {str(e)}')
-    if errors and not validated_blocks:
-        raise ValueError('All blocks invalid:\n' + '\n'.join(errors))
+def process_hierarchical_chunk(chunk: Dict) -> Dict:
+    """
+    Processes a chunk while maintaining heading relationships.
+    Returns structure with placeholders for cross-chunk sections.
+    """
+    hierarchy_context = "\n".join(
+        f"{'  '*(h['level']-1)}- {h['text']}"
+        for h in chunk["hierarchy"]
+    )
 
-    # TODO Check all page text is covered by blocks (excluding images)
-    #if combined_block_text not in normalized_page_text: ...
-    return validated_blocks
+    prompt = f"""
+    Current Heading Hierarchy:
+    {hierarchy_context}
+
+    Continue analyzing this section and its subsections.
+    For incomplete sections, use <CONTINUED> markers.
+
+    Content:
+    {json.dumps(chunk['content'][:200])}
+    """
+
+    response = genai.generate_content(
+        system_instruction=Path("prompt.md").read_text(),
+        contents=[prompt],
+        generation_config={
+            "temperature": 0.2,
+            "response_mime_type": "application/json"
+        }
+    )
+
+    result = json.loads(response.text)
+    result["meta"] = {
+        "start_headings": chunk["hierarchy"],
+        "pages": chunk["pages"]
+    }
+    return result
+
+
+def assemble_hierarchical_structure(chunk_results: List[Dict]) -> Dict:
+    """
+    Merges chunks while resolving:
+    - Continued subsections
+    - Nested heading relationships
+    - Cross-chunk references
+    """
+    document = {'sections': []}
+    section_stack = []  # Tracks open sections across chunks
+
+    for chunk in chunk_results:
+        for section in chunk['structure']['sections']:
+            current_level = section.get('level', 1)
+
+            # Close completed sections from previous chunks
+            while section_stack and section_stack[-1]['level'] >= current_level:
+                closed_section = section_stack.pop()
+                if not section_stack:
+                    document['sections'].append(closed_section)
+
+            # Handle continued sections
+            if '<CONTINUED>' in section['title']:
+                if section_stack:
+                    section['title'] = section['title'].replace('<CONTINUED>', "")
+                    section_stack[-1]['subsections'].append(section)
+            else:
+                if section_stack:
+                    section_stack[-1]['subsections'].append(section)
+                else:
+                    document['sections'].append(section)
+
+            section_stack.append(section)
+
+    # Close any remaining open sections
+    while section_stack:
+        document['sections'].append(section_stack.pop())
+    return document
 
 
 def analyze_page(page_number: int, total_pages: int, page_pdf: pymupdf.Page):
