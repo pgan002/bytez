@@ -10,20 +10,21 @@ class ContentBlock(BaseModel):
     ]
     content: str = ''
     caption: str | None = None  # For image/table/code
+    error: str | None = None
 
 
 class DocumentSection(BaseModel):
-    type: Literal['section']
-    title: str
+    heading: str
     level: int = Field(ge=1, le=4)
-    content: list[ContentBlock]
-    sections: list['DocumentSection'] = Field(default_factory=list)
-    continued: bool = False
-
+    content: list[ContentBlock] | None
+    sections: list['DocumentSection'] | None = Field(default_factory=list)
+    continued: bool | None = None
+    error: str | None = None
 
 class StructuredDocument(BaseModel):
     title: str
     sections: list[DocumentSection]
+    error: str | None = None
 
     @validator('sections')
     def check_continuations(cls, v):
