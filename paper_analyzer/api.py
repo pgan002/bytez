@@ -1,6 +1,6 @@
 from io import BytesIO
 
-import PyPDF2
+import pymupdf
 import requests
 from fastapi import Body, FastAPI, File, HTTPException, UploadFile
 
@@ -12,9 +12,9 @@ app = FastAPI()
 
 def _analyze_pdf(content):
     try:
-        page_texts = analyzer.analyze(content)
-        return {'text': page_texts}
-    except PyPDF2.errors.PdfReadError:
+        page_texts = analyzer.analyze_paper_pdf(content)
+        return page_texts
+    except pymupdf.FileDataError:
         raise HTTPException(400, 'Invalid PDF content')
     #except Exception as e:
     #    raise HTTPException(500, str(e))

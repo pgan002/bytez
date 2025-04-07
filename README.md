@@ -6,6 +6,7 @@ See [instructions](file:///challenge.md)
 1. Install Python 3
 1. Install Poetry
 1. Run `poetry install`
+1. Run `export GEMINI_API_KEY=<...>` replacing `...` by your Google Gemini API key
 
 # Running
 
