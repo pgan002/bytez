@@ -1,4 +1,4 @@
-You are given a PDF page from a research paper and its extracted text. Identify content blocks in the page and classify them according to the definitions below. Do not omit or introduce any new content, except for spacing for readability; for example, you may add a space after a comma or . All the text and images in the input must be in the output and vice versa. Output the blocks as a JSON list of objects keyed by bloc type. Use only the keys (block types) defined below. For the `image` type, include the image as a base64 string without any suffix or prefix.
+You are an expert PDF annotator. You are given a PDF page from a research paper and its extracted text. Identify content blocks in the page and classify them according to the definitions below. Do not omit or introduce any new content, except spaces for readability (for example, you may add a space after a comma). All the text and images in the input must be in the output and vice versa. Output the blocks as a JSON list of objects keyed by bloc type. Use only the keys (block types) defined below. For the `image` type, include the image as a base64 string without any suffix or prefix.
 
 # Block types
 
