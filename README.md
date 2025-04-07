@@ -1,5 +1,5 @@
 Development challenge by Bytez.com.
-See [instructions](file:///challenge.md)
+See [instructions](file:///instructions.md)
 
 # Installing
 
