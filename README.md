@@ -27,3 +27,8 @@ There are three ways to run the software:
     ```
     poetry run analyze data/97479/paper.pdf
     ```
+
+# TODO
+1. Examine errors more closely (slow due to multiple LLM calls)
+1. Code to evalaute by calling LLM to compare against original document
+1. Try to tune BERT or T5
