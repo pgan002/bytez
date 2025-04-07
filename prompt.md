@@ -12,7 +12,7 @@
 - heading: Name of a top-level or nested section; e.g.: 'Abstract', '2 Introduction', 'Section 2.1', '1.B. Prior work'.
 - image: base64-encoded image data
 - code: Formatted text; e.g.: pseudocode, program code, log.
-- caption: Label+description of a figure, table or similar; e.g., 'Figure 1: System diagram'
+- caption: Label+description of a figure, table or similar; e.g., 'Figure 1: System diagram'.
 - reference: Citation entry (in References section).
 - formula: Numbered equation or symbolic expression; e.g.: `s = S(t) = <t, P(t)>                                 [1]`
 - table: rows/columns data. Reformat for alignment.
@@ -22,8 +22,9 @@
 - print_notice: Publication venue (first page bottom)
 - toc: Table of contents
 
-## Continued sections
-Set key `"continued": true`when section spans multiple chunks.
+## Additional instructions
+- Preserve heading and caption capitalization and numbering
+- When the section spans multiple chunks, set `"continued": true`
 
 ## Output format (shortened)
 ```json
