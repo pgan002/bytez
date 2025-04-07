@@ -4,25 +4,42 @@ import os
 import sys
 from pathlib import Path
 
-from google import genai
-from google.genai.types import GenerateContentConfig
+import tiktoken
+from openai import OpenAI
 from pydantic import ValidationError
 
 from .chunking import chunk_by_semantic_units
 from .models import StructuredDocument
 
 
-LLM_NAME = 'gemini-1.5-flash-8b'  # Cheap, allows tuning (TODO: tune)
+LLM_NAME = 'gpt-4o-mini'  # Cheap, allows tuning (TODO: tune)
 MAX_RETRIES = 3
-llm_client = genai.Client(api_key=os.getenv('GEMINI_API_KEY'))
-MAX_TOKENS = 8_192  # Output limit. Output size will be similar to input size.
+llm_client = client = OpenAI()
+MAX_TOKENS = 16_384  # Output limit. Output size will be similar to input size.
 with open('prompt.md') as f:
    SYSTEM_PROMPT = f.read()
-gemini_config = GenerateContentConfig(
-    system_instruction=SYSTEM_PROMPT,
-    response_mime_type='application/json',
-    #response_schema=list[ContentBlock]
-)
+encoding = tiktoken.encoding_for_model(LLM_NAME)
+
+
+def call_llm(prompt: str) -> dict:
+    llm_response = None
+    error = None
+    for _ in range(MAX_RETRIES):
+        try:
+            completion = llm_client.chat.completions.create(
+                model=LLM_NAME,
+                messages=[
+                    {'role': 'system', 'content': SYSTEM_PROMPT},
+                    {'role': 'user', 'content': prompt}
+                ],
+                response_format={'type': 'json_object'}
+            )
+            llm_response = completion.choices[0].message.content
+            return json.loads(llm_response)
+        except Exception as e:
+            logging.error(f'LLM call failed: {e}')
+            error = e
+    return {'error': str(error), 'llm_response': llm_response}
 
 
 def process_chunk(chunk: dict) -> dict:
@@ -34,26 +51,28 @@ def process_chunk(chunk: dict) -> dict:
         f"{'  '*(h['level']-1)}- {h['text']}"
         for h in chunk['hierarchy']
     )
+    content = json.dumps(chunk['content'])
     prompt = f"""
-    Current heading hierarchy:
+    Current hierarchy:
     {hierarchy_context}
 
     Content:
-    {json.dumps(chunk['content'])}
+    {content}
     """
-    token_count = llm_client.models.count_tokens(model=LLM_NAME, contents=prompt)
-    if token_count.total_tokens > MAX_TOKENS:
-        raise ValueError(f'Input exceeds token limit: {token_count.total_tokens} > {MAX_TOKENS}')
-    response = llm_client.models.generate_content(
-        model=LLM_NAME,
-        contents=prompt,
-        config=gemini_config,
-    )
-    result = json.loads(response.text)
+    n_tokens = len(encoding.encode(content))
+    if n_tokens > MAX_TOKENS:
+        pages = chunk.get('pages')
+        ix = pages[-1] if pages else None
+        msg = f'Page {ix} chunk exceeds our token limit: {n_tokens} > {MAX_TOKENS}'
+        #raise ValueError(msg)
+        logging.error(msg)
+    result = call_llm(prompt)
     result['meta'] = {
         'start_headings': chunk['hierarchy'],
         'pages': chunk['pages']
     }
+    if n_tokens > MAX_TOKENS:
+        result['error'] = f'Chunk exceeds our token limit {MAX_TOKENS}'
     return result
 
 
@@ -101,8 +120,9 @@ def assemble_hierarchical_structure(chunk_results: list[dict]) -> dict:
 
 
 def analyze_paper_pdf(pdf_bytes: bytes) -> dict:
-    chunks = chunk_by_semantic_units(pdf_bytes)
+    chunks = chunk_by_semantic_units(pdf_bytes, max_tokens=MAX_TOKENS)
     document = {}
+    error = None
     for retry_ix in range(MAX_RETRIES):
         chunk_results = []
         for chunk in chunks:
@@ -114,6 +134,8 @@ def analyze_paper_pdf(pdf_bytes: bytes) -> dict:
             return document
         except ValidationError as e:
             logging.error(f'Structure validation failed: {e}')
+            error = e
+    document['error'] = error
     return document
 
 

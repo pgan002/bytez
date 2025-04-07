@@ -9,7 +9,7 @@
 - paragraph: Continuous body of text (not a heading, caption, footnote etc.).
 - title: Paper title (first block of page 1)
 - authors: Authors list with any affiliations and addresses (only on page 1, usually just below the title).
-- heading: Name of a top-level or nested section; e.g.: 'Abstract', '2 Introduction', 'Section 2.1', '1.B. Prior work'.
+- heading: Name of a section (required); e.g.: 'Abstract', '2 Introduction', 'Section 2.1', '1.B. Prior work'.
 - image: base64-encoded image data
 - code: Formatted text; e.g.: pseudocode, program code, log.
 - caption: Label+description of a figure, table or similar; e.g., 'Figure 1: System diagram'.
@@ -39,8 +39,8 @@
         // Paragraphs, authors, header, footer, footnote, print_notice, toc: "content": <text>
         // Images: "content": <b64-encoded>, "caption": <text>
         // Tables, code: "content": <formatted row/column text>, "caption": <text>
+        "sections": [...],
       ],
-      "sections": [...],
       "continued": bool // true if section spans multiple chunks
     }
   ]
@@ -53,7 +53,7 @@
   "title": "Neural Networks",
   "sections": [
     {
-      "title": "1. Introduction",
+      "heading": "1. Introduction",
       "level": 1,
       "content": [
         {"type": "paragraph", "content": "Deep learning..."},

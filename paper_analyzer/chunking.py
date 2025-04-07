@@ -65,7 +65,7 @@ def chunk_by_semantic_units(pdf_bytes: bytes, max_tokens: int = 128_000) -> List
                     chunk['pages'].append(page_num + 1)
 
                 # Split if approaching token limit
-                if len(json.dumps(chunk)) > max_tokens * 3.5:
+                if len(json.dumps(chunk)) > max_tokens * 3.3:
                     chunks.append(chunk)
                     # Carry over last 2 heading levels
                     chunk = {
